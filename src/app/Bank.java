@@ -1,6 +1,11 @@
 package app;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Bank {
 	// Variable for logging/not logging
@@ -9,7 +14,7 @@ public class Bank {
 	private static int accountCounter = 1;
 	private String name;
 	private ArrayList<Account> accounts;
-
+	
 	public Bank() {
 		this("Bank Name");
 	}
@@ -25,7 +30,24 @@ public class Bank {
 		accounts.add(newAccount);
 
 		log("Added account " + newAccount);
+		saveAccounts("file.txt");
 		return newAccount.accountNumber;
+	}
+	
+	public int getAcctNum(String acctName) {
+		loadAccounts("file.txt");
+		Account account = findAccountNum(acctName);
+		String[] split = (account + "").split("::");
+		int num = Integer.parseInt(split[0].substring(1));
+		return num;
+	}
+	
+	public String getAcctName(int acctNum) {
+		loadAccounts("file.txt");
+		Account account = findAccount(acctNum);
+		String[] split = (account + "").split("::");
+		String name = split[1];
+		return name;
 	}
 
 	public boolean closeAccount(int accountNumber) {
@@ -36,6 +58,7 @@ public class Bank {
 		}
 		accounts.remove(account);
 		log("Successfully closed " + account);
+		saveAccounts("file.txt");
 		return true;
 	}
 
@@ -47,6 +70,7 @@ public class Bank {
 		}
 		account.balance += amount;
 		log("Successfully deposited $" + amount + " to " + account);
+		saveAccounts("file.txt");
 		return true;
 	}
 
@@ -62,6 +86,7 @@ public class Bank {
 		}
 		account.balance -= amount;
 		log("Successfully withdrew $" + amount + " from " + account);
+		saveAccounts("file.txt");
 		return true;
 	}
 
@@ -75,20 +100,55 @@ public class Bank {
 		return account.balance;
 	}
 
-	public void saveAccounts(String filename) {
-		// TODO
-		log("Save not yet implemented.");
+	public void saveAccounts(String fileName) {
+		try {
+			FileWriter fw = new FileWriter(fileName);
+			for (Account a : accounts) {// enhanced for loop / for each
+				String message = a.toString() + "\n";
+				fw.append(message);
+			}
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		log("Accounts Saved");
 	}
-
+	
 	public void loadAccounts(String filename) {
-		// TODO
-		log("Load not yet implemented.");
+		// Go through each line
+		// Turn line into account
+		// Put account in ArrayList
+		try {
+			Scanner fileScanner = new Scanner(new File(filename));
+			while(fileScanner.hasNextLine()) {
+				String line = fileScanner.nextLine();
+				String[] split = line.split("::");
+				int acctNo = Integer.parseInt(split[0].substring(1));
+				String name = split[1];
+				int amt = Integer.parseInt(split[2].substring(1, split[2].length()-1));
+				Account a = new Account(acctNo, name, amt);
+				accounts.add(a);
+			}
+			fileScanner.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		log("Loaded file " + filename);
 	}
 
 	private Account findAccount(int accountNumber) {
 		for (int i = accounts.size() - 1; i >= 0; i--) {
 			if (accounts.get(i).accountNumber == accountNumber)
 				return accounts.get(i);
+		}
+		return null;
+	}
+	
+	private Account findAccountNum(String acctName) {
+		for(int i = accounts.size() - 1; i>= 0; i--) {
+			if((accounts.get(i).name).equals(acctName)) {
+				return accounts.get(i);
+			}
 		}
 		return null;
 	}
@@ -112,10 +172,16 @@ public class Bank {
 			balance = 0;
 			accountNumber = accountCounter++;
 		}
+		
+		private Account(int an, String name, int bal) {
+			this.accountNumber = an;
+			this.name = name;
+			this.balance = bal;
+			accountNumber = accountCounter++;
+		}
 
 		public String toString() {
 			return "{" + accountNumber + "::" + name + "::$" + balance + "}";
 		}
-
 	}
 }
